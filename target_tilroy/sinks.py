@@ -23,11 +23,11 @@ class PurchaseOrderSink(TilroySink):
         """Prepare Tilroy purchase order payload before sending to API."""
     
         # process order_date
-        order_date = record.get("order_date")
+        order_date = record.get("transaction_date")
         if isinstance(order_date, datetime):
             order_date = order_date.strftime("%Y-%m-%d")
             
-        requested_delivery_date = record.get("requested_delivery_date")
+        requested_delivery_date = record.get("delivery_date")
         if isinstance(requested_delivery_date, datetime):
             requested_delivery_date = requested_delivery_date.strftime("%Y-%m-%d")
 
@@ -41,11 +41,11 @@ class PurchaseOrderSink(TilroySink):
             payload["supplierReference"] = record["supplier_reference"]
 
         # supplier tilroyId check
-        if record.get("supplier_tilroy_id"):
-            payload["supplier"] = {"tilroyId": record.get("supplier_tilroy_id")}
+        if record.get("supplier_remoteId"):
+            payload["supplier"] = {"tilroyId": record.get("supplier_remoteId")}
         else:
             self.logger.info(
-                f"Skipping order {record.get('id')} because supplier_tilroy_id is missing"
+                f"Skipping order {record.get('id')} because supplier_remoteId is missing"
             )
             return None
 
@@ -92,78 +92,4 @@ class PurchaseOrderSink(TilroySink):
             res_json_id = response.json().get("supplierReference")
             self.logger.info(f"{self.name} created in Tilroy with ID: {res_json_id}")
             return res_json_id, True, state_updates
-
-
-# def upsert_record(self, record: dict, context: dict) -> None:
-#     """Send purchase order to Tilroy API."""
-#     state_updates = {}
-#     if record:
-#         params = {}
-#         if self.config.get("organization_id"):
-#             params["organization_id"] = self.config["organization_id"]
-
-#         response = self.client.post(
-#             self.endpoint,
-#             record,
-#             params=params
-#         )
-#         res_json_id = response.json().get("purchaseOrder", {}).get("tilroyId")
-#         self.logger.info(f"{self.name} created in Tilroy with ID: {res_json_id}")
-#         return res_json_id, True, state_updates
-    
-    
-#     def preprocess_record(self, record: dict, context: dict) -> dict:
-#         #process transaction_date
-#         transaction_date = record.get("transaction_date")
-#         if isinstance(transaction_date, datetime):
-#             transaction_date = transaction_date.strftime("%Y-%m-%d")
-        
-#         #get payload
-#         payload = {
-#             "orderDate": transaction_date,
-#         }
-
-#         if record.get("id"):
-#             payload.update({"reference_number":record.get("id")})
-
-#         #get supplier_name
-#         if record.get("supplier_id"):
-#             matches = self.search_vendors(record["supplier_name"])
-#             if matches:
-#                 vendor_id = matches[0]["contact_id"]
-#                 payload["vendor_id"] = vendor_id
-#             else:
-#                 self.logger.info(f"Skipping order because no matches found for vendor {record['supplier_name']}")
-#                 return None
-
-#         #process line_items
-#         line_items = record.get("line_items", [])
-#         if isinstance(line_items, str):
-#             line_items = self.parse_objs(line_items)
-#         if line_items:
-#             line_items = [
-#                 {"quantity": item.get("quantity"), "item_id": item.get("product_remoteId")}
-#                 for item in line_items
-#             ]
-#             payload["line_items"] = line_items
-#         else:
-#             self.logger.info("Skipping order with no line items")
-#             return None
-#         return payload
-
-#     def upsert_record(self, record: dict, context: dict) -> None:
-#         state_updates = dict()
-#         if record:
-#             params = {}
-#             if self.config.get('organization_id'):
-#                 params['organization_id'] = self.config.get('organization_id')
-#             response = self.request_api(
-#                 "POST", endpoint=self.endpoint,
-#                 request_data=record,
-#                 params=params
-#             )
-#             res_json_id = response.json()["purchaseorder"]["purchaseorder_id"]
-#             self.logger.info(f"{self.name} created with id: {res_json_id}")
-#             return res_json_id, True, state_updates
-
 
