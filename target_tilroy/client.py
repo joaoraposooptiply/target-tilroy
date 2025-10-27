@@ -26,7 +26,7 @@ class TilroySink(HotglueSink):
 
     @property
     def base_url(self) -> str:
-        """Return the API base URL, derived from the Zoho accounts server domain."""
+        """Return the API base URL for Tilroy API."""
         return f"https://api.tilroy.com"
     
     

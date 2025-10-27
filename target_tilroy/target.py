@@ -46,5 +46,10 @@ class TargetTilroy(TargetHotglue):
     
     SINK_TYPES = [PurchaseOrderSink]
 
-if __name__ == "__main__":
+def cli():
+    """CLI entry point for target-tilroy."""
     TargetTilroy.cli()
+
+
+if __name__ == "__main__":
+    cli()
