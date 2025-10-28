@@ -1,5 +1,5 @@
 
-from target_hotglue.client import HotglueSink
+from singer_sdk.sinks import Sink
 import json
 from singer_sdk.plugin_base import PluginBase
 from typing import Dict, List, Optional
@@ -9,7 +9,7 @@ from heapq import nlargest as _nlargest
 import ast
 
 from urllib.parse import urlparse
-class TilroySink(HotglueSink):
+class TilroySink(Sink):
     def __init__(
         self,
         target: PluginBase,

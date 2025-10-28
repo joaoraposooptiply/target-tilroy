@@ -96,25 +96,47 @@ class PurchaseOrderSink(TilroySink):
 
         return payload
     
+    def process_record(self, record: dict, context: dict) -> None:
+        """Process a single record."""
+        # First preprocess the record
+        processed_record = self.preprocess_record(record, context)
+        if processed_record:
+            self.upsert_record(processed_record, context)
+    
     def upsert_record(self, record: dict, context: dict) -> None:
         """Send purchase order to Tilroy API."""
-        state_updates = {}
+        import requests
+        
         if record:
-            params = {}
-
             # Construct and log the full URL
             full_url = f"{self.base_url}{self.endpoint}"
             self.logger.info(f"Making API request to: {full_url}")
             self.logger.info(f"Request method: POST")
             self.logger.info(f"Request payload: {record}")
 
-            response = self.request_api(
-                "POST",
-                endpoint=self.endpoint,
-                request_data=record,
-                params=params
-            )
-            res_json_id = response.json().get("supplierReference")
-            self.logger.info(f"{self.name} created in Tilroy with ID: {res_json_id}")
-            return res_json_id, True, state_updates
+            try:
+                response = requests.post(
+                    full_url,
+                    json=record,
+                    headers=self.http_headers,
+                    timeout=30
+                )
+                response.raise_for_status()
+                
+                res_json_id = response.json().get("supplierReference")
+                self.logger.info(f"{self.name} created in Tilroy with ID: {res_json_id}")
+                
+            except requests.exceptions.RequestException as e:
+                self.logger.error(f"API request failed: {e}")
+                raise
+    
+    def process_batch(self, context: Dict[str, Any]) -> None:
+        """Process any remaining records in the batch."""
+        # No batch processing needed for this sink
+        pass
+    
+    def clean_up(self) -> None:
+        """Clean up resources."""
+        # No cleanup needed for this sink
+        pass
 
