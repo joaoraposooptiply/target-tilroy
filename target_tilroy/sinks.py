@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class PurchaseOrderSink(TilroySink):
     """Sink for Purchase Orders to Tilroy API."""
 
-    name = "purchaseOrders"
+    name = "BuyOrders"
     # Define the endpoint path for this sink
     endpoint = "/purchaseapi/production/import/purchaseorders"
     
@@ -33,12 +33,27 @@ class PurchaseOrderSink(TilroySink):
 
         payload = {
             "orderDate": order_date,
-            "requestedDeliveryDate": requested_delivery_date,
         }
+        
+        # Set requestedDeliveryDate - use provided date or default to 30 days from order date
+        if requested_delivery_date:
+            payload["requestedDeliveryDate"] = requested_delivery_date
+        else:
+            # Default to 30 days from order date
+            from datetime import timedelta
+            if order_date:
+                order_dt = datetime.strptime(order_date, "%Y-%m-%d")
+                default_delivery = order_dt + timedelta(days=30)
+                payload["requestedDeliveryDate"] = default_delivery.strftime("%Y-%m-%d")
+            else:
+                # Fallback to current date + 30 days
+                default_delivery = datetime.now() + timedelta(days=30)
+                payload["requestedDeliveryDate"] = default_delivery.strftime("%Y-%m-%d")
 
-        # supplierReference if present
-        if record.get("supplier_reference"):
-            payload["supplierReference"] = record["supplier_reference"]
+        # supplierReference - use supplier_remoteId or supplier_reference
+        supplier_ref = record.get("supplier_reference") or record.get("supplier_remoteId")
+        if supplier_ref:
+            payload["supplierReference"] = str(supplier_ref)
 
         # supplier tilroyId check
         if record.get("supplier_remoteId"):
@@ -49,8 +64,11 @@ class PurchaseOrderSink(TilroySink):
             )
             return None
 
-        # process items (lines)
+        # process items (lines) - handle both "items" and "line_items" fields
         items = record.get("items", [])
+        if not items:
+            items = record.get("line_items", [])
+        
         if isinstance(items, str):
             items = self.parse_objs(items)
 
@@ -61,12 +79,19 @@ class PurchaseOrderSink(TilroySink):
         payload["lines"] = []
         for item in items:
             transformed_item = {
-                "status": item.get("status"),
-                "sku": {"tilroyId": item.get("product_remoteId")},
-                "requestedDeliveryDate": item.get("delivery_date"),
+                "status": item.get("status", "open"),  # Default status if not provided
+                "sku": {"tilroyId": str(item.get("product_remoteId"))},
                 "qty": {"ordered": item.get("quantity")},
                 "warehouse": {"number": int(self.config.get("warehouse_id"))}
             }
+            
+            # Set requestedDeliveryDate for line item - use provided date or default to order's delivery date
+            if item.get("delivery_date"):
+                transformed_item["requestedDeliveryDate"] = item.get("delivery_date")
+            else:
+                # Use the order's requestedDeliveryDate as default
+                transformed_item["requestedDeliveryDate"] = payload.get("requestedDeliveryDate")
+                
             payload["lines"].append(transformed_item)
 
         return payload
