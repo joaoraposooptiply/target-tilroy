@@ -54,6 +54,15 @@ class TargetTilroy(TargetHotglue):
 
 def cli():
     """CLI entry point for target-tilroy."""
+    import sys
+    import os
+    
+    # Check if no --input parameter is provided and data.singer exists
+    if '--input' not in sys.argv and os.path.exists('data.singer'):
+        # Insert --input data.singer after the script name
+        sys.argv.insert(1, '--input')
+        sys.argv.insert(2, 'data.singer')
+    
     TargetTilroy.cli()
 
 
