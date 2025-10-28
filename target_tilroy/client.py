@@ -27,7 +27,7 @@ class TilroySink(HotglueSink):
     @property
     def base_url(self) -> str:
         """Return the API base URL for Tilroy API."""
-        return f"https://api.tilroy.com"
+        return self._target.config.get("api_url", "https://api.tilroy.com")
     
     
     @property
@@ -36,9 +36,12 @@ class TilroySink(HotglueSink):
         headers = {}
         # headers.update(self.authenticator.auth_headers or {})
         
-        # Add Tilroy API key header
-        if hasattr(self._target, 'config') and self._target.config.get('Tilroy-Api-Key'):
-            headers['Tilroy-Api-Key'] = self._target.config['Tilroy-Api-Key']
+        # Add Tilroy API key headers
+        if hasattr(self._target, 'config'):
+            if self._target.config.get('tilroy_api_key'):
+                headers['Tilroy-Api-Key'] = self._target.config['tilroy_api_key']
+            if self._target.config.get('x_api_key'):
+                headers['X-Api-Key'] = self._target.config['x_api_key']
         
         return headers
     

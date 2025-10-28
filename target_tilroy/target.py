@@ -25,16 +25,22 @@ class TargetTilroy(TargetHotglue):
     name = "target-tilroy"
     config_jsonschema = th.PropertiesList(
         th.Property(
-            "base_url",
+            "api_url",
             th.StringType,
             default="https://api.tilroy.com",
-            description="Base URL for Tilroy API"
+            description="API URL for Tilroy API"
         ),
         th.Property(
-            "Tilroy-Api-Key",
+            "tilroy_api_key",
             th.StringType,
             required=True,
             description="API Key for Tilroy authentication"
+        ),
+        th.Property(
+            "x_api_key",
+            th.StringType,
+            required=True,
+            description="X API Key for Tilroy authentication"
         ),
         th.Property(
             "warehouse_id",
