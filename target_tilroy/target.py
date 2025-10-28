@@ -46,7 +46,9 @@ class TargetTilroy(Target):
                 raise ValueError(f"Unknown stream: {stream_name}")
         
         sink = self._sinks[stream_name]
-        sink.process_record(record, context)
+        # Extract the actual record data from the Singer message
+        record_data = record.get("record", {})
+        sink.process_record(record_data, context)
     
     def _process_schema_message(self, message: Dict[str, Any]) -> None:
         """Process a schema message."""
@@ -113,5 +115,43 @@ class TargetTilroy(Target):
         for sink in self._sinks.values():
             sink.clean_up()
 
-if __name__ == "__main__":
+def cli():
+    """CLI entry point for target-tilroy."""
+    import sys
+    import os
+    import glob
+    
+    # Check if no --input parameter is provided
+    if '--input' not in sys.argv:
+        # Look for data.singer file in common locations
+        possible_paths = [
+            'data.singer',
+            'etl-output/data.singer',
+            'sync-output/data.singer',
+            '/home/hotglue/*/etl-output/data.singer',
+            '/home/hotglue/*/sync-output/data.singer'
+        ]
+        
+        data_file = None
+        for path in possible_paths:
+            if '*' in path:
+                # Handle glob patterns
+                matches = glob.glob(path)
+                if matches:
+                    data_file = matches[0]
+                    break
+            elif os.path.exists(path):
+                data_file = path
+                break
+        
+        if data_file:
+            # Insert --input parameter
+            sys.argv.insert(1, '--input')
+            sys.argv.insert(2, data_file)
+            print(f"Auto-detected input file: {data_file}")
+    
     TargetTilroy.cli()
+
+
+if __name__ == "__main__":
+    cli()

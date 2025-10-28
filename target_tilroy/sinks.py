@@ -26,10 +26,28 @@ class PurchaseOrderSink(TilroySink):
         order_date = record.get("transaction_date")
         if isinstance(order_date, datetime):
             order_date = order_date.strftime("%Y-%m-%d")
+        elif isinstance(order_date, str):
+            # Handle ISO format dates
+            try:
+                if 'T' in order_date:
+                    order_date = order_date.split('T')[0]
+                else:
+                    order_date = order_date
+            except:
+                pass
             
         requested_delivery_date = record.get("delivery_date")
         if isinstance(requested_delivery_date, datetime):
             requested_delivery_date = requested_delivery_date.strftime("%Y-%m-%d")
+        elif isinstance(requested_delivery_date, str):
+            # Handle ISO format dates
+            try:
+                if 'T' in requested_delivery_date:
+                    requested_delivery_date = requested_delivery_date.split('T')[0]
+                else:
+                    requested_delivery_date = requested_delivery_date
+            except:
+                pass
 
         payload = {
             "orderDate": order_date,

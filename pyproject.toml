@@ -35,4 +35,4 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 # CLI declaration
-target-tilroy = 'target_tilroy.target:TargetTilroy.cli'
+target-tilroy = 'target_tilroy.target:cli'
