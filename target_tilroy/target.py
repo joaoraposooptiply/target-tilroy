@@ -56,12 +56,36 @@ def cli():
     """CLI entry point for target-tilroy."""
     import sys
     import os
+    import glob
     
-    # Check if no --input parameter is provided and data.singer exists
-    if '--input' not in sys.argv and os.path.exists('data.singer'):
-        # Insert --input data.singer after the script name
-        sys.argv.insert(1, '--input')
-        sys.argv.insert(2, 'data.singer')
+    # Check if no --input parameter is provided
+    if '--input' not in sys.argv:
+        # Look for data.singer file in common locations
+        possible_paths = [
+            'data.singer',
+            'etl-output/data.singer',
+            'sync-output/data.singer',
+            '/home/hotglue/*/etl-output/data.singer',
+            '/home/hotglue/*/sync-output/data.singer'
+        ]
+        
+        data_file = None
+        for path in possible_paths:
+            if '*' in path:
+                # Handle glob patterns
+                matches = glob.glob(path)
+                if matches:
+                    data_file = matches[0]
+                    break
+            elif os.path.exists(path):
+                data_file = path
+                break
+        
+        if data_file:
+            # Insert --input parameter
+            sys.argv.insert(1, '--input')
+            sys.argv.insert(2, data_file)
+            print(f"Auto-detected input file: {data_file}")
     
     TargetTilroy.cli()
 
