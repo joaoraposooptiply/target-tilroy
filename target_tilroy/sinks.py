@@ -142,15 +142,26 @@ class PurchaseOrderSink(TilroySink):
                 
                 # Log response details for debugging
                 self.logger.info(f"Response status: {response.status_code}")
-                self.logger.info(f"Response headers: {dict(response.headers)}")
                 
-                if response.status_code != 200:
+                if response.status_code == 200:
+                    res_json_id = response.json().get("supplierReference")
+                    self.logger.info(f"{self.name} created in Tilroy with ID: {res_json_id}")
+                elif response.status_code == 500:
+                    # Handle specific 500 errors
+                    try:
+                        error_data = response.json()
+                        if "supplier" in error_data.get("message", "").lower() and "not found" in error_data.get("message", "").lower():
+                            self.logger.warning(f"Skipping order - supplier not found in Tilroy: {error_data.get('message')}")
+                            return  # Skip this order instead of failing
+                        else:
+                            self.logger.error(f"API error response: {response.text}")
+                            response.raise_for_status()
+                    except:
+                        self.logger.error(f"API error response: {response.text}")
+                        response.raise_for_status()
+                else:
                     self.logger.error(f"API error response: {response.text}")
-                
-                response.raise_for_status()
-                
-                res_json_id = response.json().get("supplierReference")
-                self.logger.info(f"{self.name} created in Tilroy with ID: {res_json_id}")
+                    response.raise_for_status()
                 
             except requests.exceptions.RequestException as e:
                 self.logger.error(f"API request failed: {e}")
