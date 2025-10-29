@@ -139,6 +139,14 @@ class PurchaseOrderSink(TilroySink):
                     headers=self.http_headers,
                     timeout=30
                 )
+                
+                # Log response details for debugging
+                self.logger.info(f"Response status: {response.status_code}")
+                self.logger.info(f"Response headers: {dict(response.headers)}")
+                
+                if response.status_code != 200:
+                    self.logger.error(f"API error response: {response.text}")
+                
                 response.raise_for_status()
                 
                 res_json_id = response.json().get("supplierReference")
@@ -146,6 +154,8 @@ class PurchaseOrderSink(TilroySink):
                 
             except requests.exceptions.RequestException as e:
                 self.logger.error(f"API request failed: {e}")
+                if hasattr(e, 'response') and e.response is not None:
+                    self.logger.error(f"Error response: {e.response.text}")
                 raise
     
     def process_batch(self, context: Dict[str, Any]) -> None:
